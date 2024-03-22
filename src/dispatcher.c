@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-
 // Structure to represent a process
 typedef struct {
     int arrival_time;
@@ -35,7 +31,6 @@ int main() {
         return 1;
     }
 
-
     // Read processes from file and execute
     Process process;
     while (fscanf(file, "%d, %d, %d, %d, %d, %d, %d, %d", &process.arrival_time, &process.priority, &process.processor_time, &process.memory_required, &process.printers, &process.scanners, &process.modems, &process.cds) != EOF) {
@@ -61,6 +56,7 @@ int main() {
 // Function to execute a real-time process with highest priority
 void runRealTime(Process process) {
     printf("Executing Real-Time Process\n");
+    displayProcessInfo(process); // Display job parameters
     while (process.processor_time > 0) {
         printf("Process %d is running\n", process.pid);
         process.processor_time--;
@@ -71,6 +67,7 @@ void runRealTime(Process process) {
 // Function to execute a user process with feedback scheduler
 void runUserProcess(Process process) {
     printf("Executing User Process with Feedback Scheduler\n");
+    displayProcessInfo(process); // Display job parameters
     while (process.processor_time > 0) {
         printf("Process %d is running\n", process.pid);
         process.processor_time--;
@@ -88,6 +85,7 @@ void runUserProcess(Process process) {
 // Function to execute a user process with round robin scheduler
 void runRoundRobinUser(Process process) {
     printf("Executing User Process with Round Robin Scheduler\n");
+    displayProcessInfo(process); // Display job parameters
     while (process.processor_time > 0) {
         printf("Process %d is running\n", process.pid);
         process.processor_time--;
@@ -115,4 +113,3 @@ void lowerPriority(Process *process) {
 void displayProcessInfo(Process process) {
     printf("Process ID: %d, Priority: %d, Processor Time Remaining: %d, Memory Location: %d, Memory Block Size: %d\n", process.pid, process.priority, process.processor_time, 0, process.memory_required);
 }
-
