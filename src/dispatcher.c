@@ -1,66 +1,118 @@
 #include <stdio.h>
-#include "process.h"
-#include "queue.h"
-#include "resource.h"
-#include "memory.h"
+#include <stdlib.h>
+#include <stdbool.h>
+
+// Structure to represent a process
+typedef struct {
+    int arrival_time;
+    int priority;
+    int processor_time;
+    int memory_required;
+    int printers;
+    int scanners;
+    int modems;
+    int cds;
+    int pid; // Process ID
+} Process;
+
+// Function prototypes
+void runRealTime(Process process);
+void runUserProcess(Process process);
+void runRoundRobinUser(Process process);
+void lowerPriority(Process *process);
+void displayProcessInfo(Process process);
 
 int main() {
-    struct Process processes[MAX_PROCESSES];
-    int num_processes;
-    struct Resource resources;
-    struct Memory memory;
+    // Prompt the user for the file path
+    char file_path[256];
+    printf("Please enter the file path: ");
+    scanf("%255s", file_path);
 
-    // Initialize data structures
-    Queue real_time_queue, user_queue;
-    init_queue(&real_time_queue);
-    init_queue(&user_queue);
-    init_resources(&resources);
-    init_memory(&memory);
+    // Open dispatch list file
+    FILE *file = fopen(file_path, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return 1;
+    }
 
-    // Read dispatch list
-    read_dispatch_list("dispatch_list.csv", processes, &num_processes);
 
-    // Process each task from dispatch list
-    for (int i = 0; i < num_processes; i++) {
-        struct Process process = processes[i];
+    // Read processes from file and execute
+    Process process;
+    while (fscanf(file, "%d, %d, %d, %d, %d, %d, %d, %d", &process.arrival_time, &process.priority, &process.processor_time, &process.memory_required, &process.printers, &process.scanners, &process.modems, &process.cds) != EOF) {
+        process.pid++; // Assigning process ID
+        displayProcessInfo(process);
 
-        // Resource allocation
+        // Check priority and dispatch accordingly
         if (process.priority == 0) {
-            if (!allocate_memory(&memory, process.memory_size)) {
-                printf("Real-time process cannot be executed due to insufficient memory.\n");
-                continue;
-            }
+            runRealTime(process);
         } else {
-            if (!request_resources(&resources, process)) {
-                printf("User process %d cannot be executed due to insufficient resources.\n", i);
-                continue;
+            if (process.priority == 1) {
+                runUserProcess(process);
+            } else {
+                runRoundRobinUser(process);
             }
-            if (!allocate_memory(&memory, process.memory_size)) {
-                printf("User process %d cannot be executed due to insufficient memory.\n", i);
-                continue;
-            }
-        }
-
-        // Execute process
-        printf("Executing Process %d:\n", i);
-        printf("Arrival Time: %d\n", process.arrival_time);
-        printf("Priority: %d\n", process.priority);
-        printf("Processor Time: %d\n", process.processor_time);
-        printf("Memory Size: %d\n", process.memory_size);
-        printf("Printers: %d\n", process.printers);
-        printf("Scanners: %d\n", process.scanners);
-        printf("Modems: %d\n", process.modems);
-        printf("CDs: %d\n", process.cds);
-        printf("\n");
-
-        // Free resources
-        if (process.priority == 0) {
-            deallocate_memory(&memory, process.memory_size);
-        } else {
-            release_resources(&resources, process);
-            deallocate_memory(&memory, process.memory_size);
         }
     }
 
+    fclose(file);
     return 0;
 }
+
+// Function to execute a real-time process with highest priority
+void runRealTime(Process process) {
+    printf("Executing Real-Time Process\n");
+    while (process.processor_time > 0) {
+        printf("Process %d is running\n", process.pid);
+        process.processor_time--;
+    }
+    printf("Process %d has finished execution\n", process.pid);
+}
+
+// Function to execute a user process with feedback scheduler
+void runUserProcess(Process process) {
+    printf("Executing User Process with Feedback Scheduler\n");
+    while (process.processor_time > 0) {
+        printf("Process %d is running\n", process.pid);
+        process.processor_time--;
+        if (process.processor_time == 0) {
+            printf("Process %d has finished execution\n", process.pid);
+        }
+    }
+
+    // Check if process completed within current priority level
+    if (process.processor_time > 0) {
+        lowerPriority(&process);
+    }
+}
+
+// Function to execute a user process with round robin scheduler
+void runRoundRobinUser(Process process) {
+    printf("Executing User Process with Round Robin Scheduler\n");
+    while (process.processor_time > 0) {
+        printf("Process %d is running\n", process.pid);
+        process.processor_time--;
+        if (process.processor_time == 0) {
+            printf("Process %d has finished execution\n", process.pid);
+        }
+    }
+
+    // Check if process completed within current priority level
+    if (process.processor_time > 0) {
+        lowerPriority(&process);
+    }
+}
+
+// Function to lower priority of a process
+void lowerPriority(Process *process) {
+    // Lower priority if possible
+    if (process->priority < 3) {
+        process->priority++;
+        printf("Lowering priority of Process %d\n", process->pid);
+    }
+}
+
+// Function to display process information
+void displayProcessInfo(Process process) {
+    printf("Process ID: %d, Priority: %d, Processor Time Remaining: %d, Memory Location: %d, Memory Block Size: %d\n", process.pid, process.priority, process.processor_time, 0, process.memory_required);
+}
+
